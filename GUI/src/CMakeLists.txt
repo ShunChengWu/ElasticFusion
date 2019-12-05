@@ -4,6 +4,9 @@ project(ElasticFusion)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
+ADD_SUBDIRECTORY(../../Core/src ./Build_ElasticFuion)
+INCLUDE_DIRECTORIES(../../Core/src)
+
 if(WIN32)
   macro(CANONIFY_BOOL var)
     if(${var})
@@ -24,8 +27,11 @@ find_package(ZLIB REQUIRED)
 find_package(Pangolin 0.1 REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenNI2 REQUIRED)
-find_package(efusion REQUIRED)
+#find_package(efusion REQUIRED)
 find_package(SuiteSparse REQUIRED)
+find_package(OpenCV REQUIRED)
+
+INCLUDE(cmake/UseCxxTools.cmake)
 
 if(WIN32)
   find_package(RealSense QUIET)
@@ -42,7 +48,7 @@ include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${EIGEN_INCLUDE_DIRS})
 include_directories(${Pangolin_INCLUDE_DIRS})
 include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${EFUSION_INCLUDE_DIR})
+#include_directories(${EFUSION_INCLUDE_DIR})
 include_directories(${OPENNI2_INCLUDE_DIR})
 
 if(WITH_REALSENSE)
@@ -69,8 +75,8 @@ else()
   add_definitions(-Dlinux=1)
 endif()
 
-set(CMAKE_CXX_FLAGS ${ADDITIONAL_CMAKE_CXX_FLAGS} "-O3 -msse2 -msse3 -Wall -std=c++11")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11")
+#set(CMAKE_CXX_FLAGS ${ADDITIONAL_CMAKE_CXX_FLAGS} "-O3 -msse2 -msse3 -Wall -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11")
 
 add_executable(ElasticFusion 
                ${srcs}
@@ -80,18 +86,21 @@ add_executable(ElasticFusion
 )
 
 target_link_libraries(ElasticFusion
-					  ${EXTRA_WINDOWS_LIBS}
-                      ${ZLIB_LIBRARY}
-                      ${Pangolin_LIBRARIES}
-                      ${CUDA_LIBRARIES}
-                      ${EXTRA_LIBS}
-                      ${EFUSION_LIBRARY}
-                      ${OPENNI2_LIBRARY}
-                      ${SUITESPARSE_LIBRARIES}
-                      ${BLAS_LIBRARIES}
-                      ${LAPACK_LIBRARIES}
+        PUBLIC ${EXTRA_WINDOWS_LIBS}
+        PUBLIC ${ZLIB_LIBRARY}
+        PUBLIC ${Pangolin_LIBRARIES}
+        PUBLIC ${CUDA_LIBRARIES}
+        PUBLIC ${EXTRA_LIBS}
+        PUBLIC efusion
+#        PUBLIC ${EFUSION_LIBRARY}
+        PUBLIC ${OPENNI2_LIBRARY}
+        PUBLIC ${SUITESPARSE_LIBRARIES}
+        PUBLIC ${BLAS_LIBRARIES}
+        PUBLIC ${LAPACK_LIBRARIES}
+	    PUBLIC ${OpenCV_LIBS}
 )
-
+set(targetname ElasticFusion)
+INCLUDE(cmake/LinkCxxTools.cmake)
 
 INSTALL(TARGETS ElasticFusion
         RUNTIME DESTINATION bin

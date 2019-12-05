@@ -34,7 +34,6 @@ MainController::MainController(int argc, char * argv[])
     std::string calibrationFile;
     Parse::get().arg(argc, argv, "-cal", calibrationFile);
 
-    Resolution::getInstance(640, 480);
 
     if(calibrationFile.length())
     {
@@ -42,24 +41,29 @@ MainController::MainController(int argc, char * argv[])
     }
     else
     {
+        Resolution::getInstance(640, 480);
         Intrinsics::getInstance(528, 528, 320, 240);
     }
 
     Parse::get().arg(argc, argv, "-l", logFile);
-
-    if(logFile.length())
-    {
-        logReader = new RawLogReader(logFile, Parse::get().arg(argc, argv, "-f", empty) > -1);
-    }
-    else
-    {
+    bool opencv = Parse::get().arg(argc,argv,"-cv",empty) > -1;
+    if(opencv){
         bool flipColors = Parse::get().arg(argc,argv,"-f",empty) > -1;
-        logReader = new LiveLogReader(logFile, flipColors, LiveLogReader::CameraType::OpenNI2);
+        logReader = new OpenCVLogReader(logFile, flipColors);
+    } else {
+        if(logFile.length())
+        {
+            logReader = new RawLogReader(logFile, Parse::get().arg(argc, argv, "-f", empty) > -1);
+        }
+        else
+        {
+            bool flipColors = Parse::get().arg(argc,argv,"-f",empty) > -1;
+            logReader = new LiveLogReader(logFile, flipColors, LiveLogReader::CameraType::OpenNI2);
 
-        good = ((LiveLogReader *)logReader)->cam->ok();
+            good = ((LiveLogReader *)logReader)->cam->ok();
 
 #ifdef WITH_REALSENSE
-        if(!good)
+            if(!good)
         {
           delete logReader;
           logReader = new LiveLogReader(logFile, flipColors, LiveLogReader::CameraType::RealSense);
@@ -67,6 +71,7 @@ MainController::MainController(int argc, char * argv[])
           good = ((LiveLogReader *)logReader)->cam->ok();
         }
 #endif
+        }
     }
 
     if(Parse::get().arg(argc, argv, "-p", poseFile) > 0)
@@ -164,13 +169,14 @@ void MainController::loadCalibration(const std::string & filename)
     assert(!file.eof());
 
     double fx, fy, cx, cy;
-
+    int width, height;
     std::getline(file, line);
 
-    int n = sscanf(line.c_str(), "%lg %lg %lg %lg", &fx, &fy, &cx, &cy);
+    int n = sscanf(line.c_str(), "%d %d %lg %lg %lg %lg", &width, &height, &fx, &fy, &cx, &cy);
 
-    assert(n == 4 && "Ooops, your calibration file should contain a single line with fx fy cx cy!");
+    assert(n == 6 && "Ooops, your calibration file should contain a single line with width height fx fy cx cy!");
 
+    Resolution::getInstance(width,height);
     Intrinsics::getInstance(fx, fy, cx, cy);
 }
 
